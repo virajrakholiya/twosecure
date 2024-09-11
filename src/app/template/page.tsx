@@ -24,16 +24,21 @@ import {
 } from "@/components/ui/dialog";
 import { supabaseClient } from "@/utils/supabaseClient";
 import { useSession, useAuth } from "@clerk/nextjs";
+import { redirect } from "next/navigation";
+import { TbApi } from "react-icons/tb";
 
 function Page() {
   const [apiKey, setApiKey] = useState("");
   const [secondApiKey, setSecondApiKey] = useState(""); // State for the second API key
   const [selectedApi, setSelectedApi] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false); // State for dialog open
+  const [customApiName, setCustomApiName] = useState("");
 
   const { session } = useSession();
   const { userId } = useAuth();
-
+  if (!userId) {
+    redirect("/sign-in");
+  }
   const data = [
     {
       id: 1,
@@ -68,6 +73,13 @@ function Page() {
     },
   ];
 
+  const customApiCard = {
+    id: data.length + 1,
+    title: "Custom API",
+    icon: <TbApi size={30} />,
+    api_name: "Custom",
+  };
+
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
@@ -97,6 +109,35 @@ function Page() {
       setSecondApiKey(""); // Reset the second API key
       setSelectedApi(null); // Reset selected API
       setIsDialogOpen(false); // Close the dialog on successful submission
+    }
+  };
+
+  const handleCustomApiSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!session || !userId) {
+      console.error("User not authenticated");
+      return;
+    }
+
+    const token = await session.getToken({ template: "supabase" });
+    const supabase = await supabaseClient(token);
+
+    const { error } = await supabase.from("2Secure").insert({
+      user_id: userId,
+      key: apiKey,
+      second_key: secondApiKey,
+      api_name: customApiName,
+    });
+
+    if (error) {
+      console.error("Error inserting data:", error);
+    } else {
+      console.log("Custom API data inserted successfully");
+      setApiKey("");
+      setSecondApiKey("");
+      setCustomApiName("");
+      setIsDialogOpen(false);
     }
   };
 
@@ -179,6 +220,79 @@ function Page() {
               </CardFooter>
             </Card>
           ))}
+          
+          {/* Custom API Card */}
+          <Card className="flex flex-col justify-between">
+            <CardHeader>
+              <div className="flex items-center space-x-4">
+                <Avatar>
+                  <AvatarFallback style={{ width: "100px", height: "100px" }}>
+                    {customApiCard.icon}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle>{customApiCard.title}</CardTitle>
+                  <CardDescription>Add Custom API Key</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardFooter>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="w-full"
+                    variant="default"
+                    onClick={() => {
+                      setSelectedApi(customApiCard.api_name);
+                      setIsDialogOpen(true);
+                    }}
+                  >
+                    Add Custom API Key
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Custom API Key</DialogTitle>
+                    <DialogDescription>
+                      Enter your custom API details below:
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleCustomApiSubmit} className="space-y-4">
+                    <input
+                      type="text"
+                      value={customApiName}
+                      onChange={(e) => setCustomApiName(e.target.value)}
+                      placeholder="Enter API Name"
+                      className="w-full border border-gray-300 rounded p-2"
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="Enter API Key"
+                      className="w-full border border-gray-300 rounded p-2"
+                      required
+                    />
+                    <input
+                      type="text"
+                      value={secondApiKey}
+                      onChange={(e) => setSecondApiKey(e.target.value)}
+                      placeholder="Enter Secret Key (optional)"
+                      className="w-full border border-gray-300 rounded p-2"
+                    />
+                    <Button
+                      type="submit"
+                      variant="default"
+                      className="w-full"
+                    >
+                      Submit
+                    </Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardFooter>
+          </Card>
         </div>
       </div>
     </div>

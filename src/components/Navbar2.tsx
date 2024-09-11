@@ -11,7 +11,7 @@ function Navbar() {
     >
       <h1 className="text-2xl font-bold text-white">2Secure</h1>
       <div className="flex items-center gap-5">
-       <Link href={'/template/dashboard'}><Button variant={"secondary"}>Dashboard</Button></Link> 
+       <Link href={'/template'}><Button variant={"secondary"}>Template</Button></Link> 
         <UserButton
           appearance={{
             elements: {
