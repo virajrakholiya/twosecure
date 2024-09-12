@@ -48,10 +48,13 @@ function Dashboard() {
     }
 
     async function fetchData() {
-      if (session) {
+      if (session && userId) {
         const token = await session.getToken({ template: "supabase" });
         const supabase = await supabaseClient(token);
-        const { data, error } = await supabase.from('2Secure').select('*');
+        const { data, error } = await supabase
+          .from('2Secure')
+          .select('*')
+          .eq('user_id', userId);
         if (error) {
           console.error('Error fetching data:', error);
         } else {
